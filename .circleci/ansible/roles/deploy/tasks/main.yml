@@ -1,7 +1,7 @@
 ---
 - name: copy dist backend folder to ec2 server
   become: yes
-  synchronize:
+  copy:
     src: /root/project/backend
     dest: /home/ubuntu/
 

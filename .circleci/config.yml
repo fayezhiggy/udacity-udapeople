@@ -305,12 +305,12 @@ jobs:
             - "0c:1c:3f:7d:d4:5f:7d:cd:6a:d7:02:b8:12:72:36:ca"
       - restore_cache:
           keys: [backend-build]
-      - attach_workspace:
-          at: /tmp/.circleci/ansible
+      # - attach_workspace:
+      #     at: /tmp/.circleci/ansible
       - run:
           name: Install dependencies
           command: |
-            apk add --update ansible aws-cli
+            apk add --update ansible aws-cli rsync
       - run:
           name: prepare environment for backend build
           command: |
@@ -331,7 +331,9 @@ jobs:
       - run:
           name: Deploy backend
           command: |
-            ansible-playbook -i /tmp/.circleci/ansible/inventory.txt ~/project/.circleci/ansible/deploy-backend.yml
+            pwd
+            ls backend
+            ansible-playbook -i .circleci/ansible/inventory.txt ~/project/.circleci/ansible/deploy-backend.yml
           # Here's where you will add some code to rollback on failure
       #- destroy-environment:
       #workflow_id: ${CIRCLE_WORKFLOW_ID}
@@ -458,8 +460,8 @@ jobs:
 workflows:
   default:
     jobs:
-      - build-frontend
-      - build-backend
+      # - build-frontend
+      # - build-backend
       # - test-frontend:
 
       #     requires: [build-frontend]
@@ -469,21 +471,21 @@ workflows:
       #     requires: [build-backend]
       # - scan-frontend:
       #     requires: [build-frontend]
-      - deploy-infrastructure:
-          requires: [build-frontend, build-backend]
-          # filters:
-          #   branches:
-          #     only: [test-feature-branch]
-      - configure-infrastructure:
-          requires: [deploy-infrastructure]
-      - run-migrations:
-          requires: [configure-infrastructure]
-      - deploy-frontend:
-          requires: [run-migrations]
-      - deploy-backend:
-          requires: [run-migrations]
+      # - deploy-infrastructure:
+      #     requires: [build-frontend, build-backend]
+      # filters:
+      #   branches:
+      #     only: [test-feature-branch]
+      # - configure-infrastructure:
+      #     requires: [deploy-infrastructure]
+      # - run-migrations:
+      #     requires: [configure-infrastructure]
+      # - deploy-frontend:
+      #     requires: [run-migrations]
+      - deploy-backend
+      # requires: [run-migrations]
       - smoke-test:
-          requires: [deploy-backend, deploy-frontend]
+          requires: [deploy-backend]
       # - cloudfront-update:
       #     requires: [smoke-test]
       # - cleanup:

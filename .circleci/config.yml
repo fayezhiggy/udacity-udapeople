@@ -310,7 +310,7 @@ jobs:
       - run:
           name: Install dependencies
           command: |
-            apk add --update ansible aws-cli rsync openssh
+            apk add --update ansible aws-cli rsync openssh-client
 
       - run:
           name: prepare environment for backend build

@@ -1,0 +1,17 @@
+---
+- name: copy dist backend folder to ec2 server
+  become: yes
+  copy:
+    src: ~/project/backend
+    dest: /home/ubuntu/server
+    remote_src: yes
+
+- name: build api
+  become: true
+  shell: |
+    cd /home/ubuntu/server
+    npm i
+    npm run build
+
+- name: start server
+  command: pm2 start /home/ubuntu/server/dist/main.js

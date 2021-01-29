@@ -393,7 +393,7 @@ jobs:
                 https://api.memstash.io/values/oldworkflowid
 
             # promote
-            aws cloudformation deploy \
+            aws cloudformation update-stack \
               --template-file .circleci/files/cloudfront.yml \
               --stack-name udapeople-cloudfront \
               --parameter-overrides WorkflowID="${CIRCLE_WORKFLOW_ID}" \

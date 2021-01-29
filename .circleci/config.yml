@@ -255,9 +255,13 @@ jobs:
                 --request PUT --data "1" \
                 https://api.memstash.io/values/migration-"${CIRCLE_WORKFLOW_ID}"
             fi
+      - persist_to_workspace:
+          root: ~/project
+          paths:
+            - backend
 
-      - destroy-environment:
-          workflow_id: "${CIRCLE_WORKFLOW_ID}"
+      # - destroy-environment:
+      #     workflow_id: "${CIRCLE_WORKFLOW_ID}"
 
   # after run migrations jobs succeeds, now the destroy-environment command will need to be run
   # in an image that supports nodejs 13
@@ -305,31 +309,35 @@ jobs:
             - "0c:1c:3f:7d:d4:5f:7d:cd:6a:d7:02:b8:12:72:36:ca"
       - restore_cache:
           keys: [backend-build]
-      # - attach_workspace:
-      #     at: /tmp/.circleci/ansible
+      - attach_workspace:
+          at: /tmp/artifacts
       - run:
           name: Install dependencies
           command: |
             apk update
-            apk add --update ansible aws-cli openssh-client
+            apk add --update ansible aws-cli openssh-client tar
 
+      # - run:
+      #     name: prepare environment for backend build
+      #     command: |
+      #       cat \<< EOF > backend/.env
+      #       ENVIRONMENT=production
+      #       VERSION=1
+      #       TYPEORM_CONNECTION=postgres
+      #       TYPEORM_MIGRATIONS_DIR=./src/migrations
+      #       TYPEORM_ENTITIES=./src/modules/domain/**/*.entity.ts
+      #       TYPEORM_MIGRATIONS=./src/migrations/*.ts
+
+      #       TYPEORM_HOST=${TYPEORM_HOST}
+      #       TYPEORM_PORT=${TYPEORM_PORT}
+      #       TYPEORM_USERNAME=${TYPEORM_USERNAME}
+      #       TYPEORM_PASSWORD=${TYPEORM_PASSWORD}
+      #       TYPEORM_DATABASE=${TYPEORM_DATABASE}
+      #       EOF
       - run:
-          name: prepare environment for backend build
+          name: compress backend
           command: |
-            cat \<< EOF > backend/.env
-            ENVIRONMENT=production
-            VERSION=1
-            TYPEORM_CONNECTION=postgres
-            TYPEORM_MIGRATIONS_DIR=./src/migrations
-            TYPEORM_ENTITIES=./src/modules/domain/**/*.entity.ts
-            TYPEORM_MIGRATIONS=./src/migrations/*.ts
-
-            TYPEORM_HOST=${TYPEORM_HOST}
-            TYPEORM_PORT=${TYPEORM_PORT}
-            TYPEORM_USERNAME=${TYPEORM_USERNAME}
-            TYPEORM_PASSWORD=${TYPEORM_PASSWORD}
-            TYPEORM_DATABASE=${TYPEORM_DATABASE}
-            EOF
+            tar -C /tmp/artifacts/backend -czvf artifact.tar.gz .
       - run:
           name: Deploy backend
           command: |
@@ -361,7 +369,7 @@ jobs:
           name: Backend smoke test.
           command: |
             url=$(cat backend-url.txt)
-            url="https://${url}:3000/api/status"
+            url="https://${url}:3030/api/status"
             curl $url
       - run:
           name: Frontend smoke test.
@@ -463,7 +471,7 @@ workflows:
   default:
     jobs:
       # - build-frontend
-      # - build-backend
+      - build-backend
       # - test-frontend:
 
       #     requires: [build-frontend]
@@ -473,19 +481,19 @@ workflows:
       #     requires: [build-backend]
       # - scan-frontend:
       #     requires: [build-frontend]
-      # - deploy-infrastructure:
-      #     requires: [build-frontend, build-backend]
+      - deploy-infrastructure:
+          requires: [build-backend]
       # filters:
       #   branches:
       #     only: [test-feature-branch]
-      # - configure-infrastructure:
-      #     requires: [deploy-infrastructure]
-      # - run-migrations:
-      #     requires: [configure-infrastructure]
+      - configure-infrastructure:
+          requires: [deploy-infrastructure]
+      - run-migrations:
+          requires: [configure-infrastructure]
       # - deploy-frontend:
       #     requires: [run-migrations]
-      - deploy-backend
-      # requires: [run-migrations]
+      - deploy-backend:
+          requires: [run-migrations]
       - smoke-test:
           requires: [deploy-backend]
       # - cloudfront-update:

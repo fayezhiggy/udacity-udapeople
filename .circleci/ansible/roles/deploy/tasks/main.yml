@@ -2,16 +2,17 @@
 - name: copy dist backend folder to ec2 server
   become: yes
   copy:
-    src: ~/project/backend
-    dest: /home/ubuntu/server
-    remote_src: yes
+    src: ~/project/artifact.tar.gz
+    dest: /home/ubuntu/artifact.tar.gz
 
-- name: build api
+- name: prepare binaries
   become: true
   shell: |
-    cd /home/ubuntu/server
-    npm i
-    npm run build
+    cd /home/ubuntu
+    tar xvzf artifact.tar.gz -C .
 
 - name: start server
-  command: pm2 start /home/ubuntu/server/dist/main.js
+  become: true
+  shell: |
+    cd /home/ubuntu
+    pm2 start npm --name backend -- start
